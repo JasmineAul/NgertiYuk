@@ -7,6 +7,9 @@ session_start();
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $kategori = isset($_GET['kategori']) ? $_GET['kategori'] : '';
 
+$kategori = mysqli_real_escape_string($mysql, $kategori);
+$search = mysqli_real_escape_string($mysql, $search);
+
 // Query dasar
 $result = null; // default null, hanya eksekusi jika pencarian dilakukan
 if (!empty($search) || !empty($kategori)) {
@@ -177,7 +180,7 @@ if (!empty($search) || !empty($kategori)) {
         <select name="kategori">
             <option value="">Filter</option>
             <option value="PDF" <?= $kategori == "PDF" ? 'selected' : '' ?>>PDF</option>
-            <option value="PPT" <?= $kategori == "PPT" ? 'selected' : '' ?>>PPT</option>
+            <option value="PPTX" <?= $kategori == "PPTX" ? 'selected' : '' ?>>PPT</option>
             <option value="MP3" <?= $kategori == "MP3" ? 'selected' : '' ?>>MP3</option>
             <option value="MP4" <?= $kategori == "MP4" ? 'selected' : '' ?>>MP4</option>
         </select>
