@@ -6,6 +6,29 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'operator') {
     header("Location: login.php");
     exit();
 }
+
+$jumlahMateri = 0;
+$token = $_SESSION['token'] ?? '';
+
+// Ambil data materi dari API
+if ($token) {
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, "http://localhost/ngertiyuk/api/materi/list.php");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "X-Access-Token: $token"
+    ]);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $data = json_decode($response, true);
+
+    if ($data && isset($data['status']) && $data['status'] === 'success') {
+        $jumlahMateri = count($data['data']);
+    }
+}
 ?>
 
 <!DOCTYPE html>
