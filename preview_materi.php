@@ -1,19 +1,29 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], ['operator', 'pengguna'])) {
-    header("Location: login.php");
+require 'koneksi_db.php';
+
+// Cek apakah user sudah login dan memiliki role
+if (!isset($_SESSION['token']) || !isset($_SESSION['role'])) {
+    echo "Akses ditolak. Silakan login terlebih dahulu.";
     exit();
 }
 
-require 'koneksi_db.php';
+// Tetapkan role dari session
+define("AUTH_USER_ROLE", $_SESSION['role']);
 
+// Hanya izinkan role tertentu
+if (AUTH_USER_ROLE !== 'operator' && AUTH_USER_ROLE !== 'pengguna') {
+    echo "Akses ditolak. Role tidak diizinkan.";
+    exit();
+}
+
+// Validasi ID materi
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     echo "ID materi tidak ditemukan.";
     exit();
 }
 
 $id = intval($_GET['id']);
-
 $stmt = $mysql->prepare("SELECT * FROM materi WHERE id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
@@ -26,7 +36,7 @@ if (!$materi) {
 }
 
 $file_url = "uploads/" . htmlspecialchars($materi['filename']);
-$kategori = $materi['kategori'];
+$kategori = strtolower($materi['kategori']);
 ?>
 
 <!DOCTYPE html>
@@ -99,12 +109,8 @@ $kategori = $materi['kategori'];
             <img src="Assets/logoo.png" alt="Logo" style="height: 40px;">
         </div>
         <div class="menu">
-            <?php
-                $dashboard_url = ($_SESSION['role'] === 'operator') ? 'dashboard_operator.php' : 'Pengguna/dashboard.php';
-                $kategoriMateri_url = ($_SESSION['role'] === 'operator') ? 'kategori_materi_operator.php' : 'Pengguna/kategori_materi_pgn.php';
-            ?>
-            <a href="<?= $dashboard_url ?>">Home</a>
-            <a href="<?= $kategoriMateri_url ?>">Materi</a>
+            <a href="<?= (AUTH_USER_ROLE === 'operator') ? 'dashboard_operator.php' : 'pengguna/dashboard.php' ?>">Home</a>
+            <a href="<?= (AUTH_USER_ROLE === 'operator') ? 'kategori_materi_operator.php' : 'pengguna/kategori_materi_pgn.php' ?>">Materi</a>
             <div class="profile-icon">
                 <a href="profile.php">
                 <img src="assets/profile.jpg" alt="profile" style="height: 32px; border-radius: 50%;">
@@ -135,9 +141,7 @@ $kategori = $materi['kategori'];
             <p>Preview untuk tipe file ini tidak tersedia.</p>
         <?php endif; ?>
     </div>
-    <?php
-    $back_url = ($_SESSION['role'] === 'operator') ? 'kategori_materi_operator.php' : 'pengguna/kategori_materi_pgn.php';
-    ?>
+    <?php $back_url = (AUTH_USER_ROLE === 'operator') ? 'kategori_materi_operator.php' : 'pengguna/kategori_materi_pgn.php';?>
     <a href="<?= $back_url ?>" class="back-button">Back</a>
 </div>
 </body>
