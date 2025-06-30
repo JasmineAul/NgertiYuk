@@ -1,38 +1,3 @@
-<?php
-session_start();
-include 'koneksi_db.php';
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = trim($_POST['username']);
-    $email    = trim($_POST['email']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-
-    // Tentukan role berdasarkan username dan email
-    $role = ($username === 'admin' && $email === 'admin@gmail.com') ? 'operator' : 'pengguna';
-
-    $stmt = $mysql->prepare("INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $username, $email, $password, $role);
-
-    if ($stmt->execute()) {
-        $_SESSION['user_id'] = $stmt->insert_id;
-        $_SESSION['username'] = $username;
-        $_SESSION['role'] = $role;
-
-        // Redirect sesuai role
-        if ($role === 'operator') {
-            header("Location: login.php");
-        } else {
-            header("Location: login.php");
-        }
-        exit();
-    } else {
-        $error = "Gagal mendaftar: " . $stmt->error;
-    }
-
-    $stmt->close();
-}
-?>
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -66,7 +31,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 8px;
             box-sizing: border-box;
         }
-
+        .form-container select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
         .form-container button {
             padding: 10px 14px;
             background: #395886;
@@ -92,24 +64,62 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .form-container a:hover {
             text-decoration: underline;
         }
+        .message {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
         .error {
             color: red;
-            text-align: center;
-            margin-bottom: 10px;
+        }
+        .success {
+            color: green;
         }
     </style>
 </head>
 <body>
     <div class="form-container">
         <h2>Register</h2>
-        <?php if (!empty($error)) echo "<p class='error'>$error</p>"; ?>
-        <form method="post">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Password" required>
+        <form id="registerForm">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <select id="role" required>
+                <option value="">Pilih Role</option>
+                <option value="pengguna">Pengguna</option>
+                <option value="operator">Operator</option>
+            </select>
             <button type="submit">Daftar</button>
         </form>
+        <div id="message" class="message"></div>
         <p>Sudah punya akun? <a href="login.php">Login di sini</a></p>
     </div>
+
+    <script>
+    document.getElementById("registerForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const username = document.getElementById("username").value;
+        const email    = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const role = document.getElementById("role").value;
+
+        fetch("http://localhost/NgertiYuk/api/auth/register.php", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, email, password, role })
+        })
+        .then(res => res.json())
+        .then(data => {
+            const msg = document.getElementById("message");
+            msg.innerText = data.message;
+            msg.className = "message " + (data.status === "success" ? "success" : "error");
+            if (data.status === "success") {
+                setTimeout(() => window.location.href = "login.php", 1500);
+            }
+        });
+    });
+    </script>
 </body>
 </html>
