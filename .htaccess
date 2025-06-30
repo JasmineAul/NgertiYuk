@@ -1,0 +1,5 @@
+RewriteEngine On
+
+# Izinkan Authorization header diteruskan ke PHP
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
