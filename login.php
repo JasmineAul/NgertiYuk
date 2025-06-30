@@ -1,40 +1,40 @@
 <?php
 session_start();
-include 'koneksi_db.php';
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    // Ambil username, password hash, dan role dari database
-    $stmt = $mysql->prepare("SELECT id, username, password, role FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // Kirim ke API login
+    $apiURL = "http://localhost/ngertiyuk/api/auth/login.php";
+    
+    $ch = curl_init($apiURL);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+        'username' => $username,
+        'password' => $password
+    ]));
+    curl_setopt($ch, CURLOPT_POST, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
 
-    if ($result->num_rows === 1) {
-        $user = $result->fetch_assoc();
+    $result = json_decode($response, true);
 
-        if (password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['role'] = $user['role'];
+    if (isset($result['status']) && $result['status'] === 'success') {
+        $_SESSION['token'] = $result['token'];
+        $_SESSION['user_id'] = $result['user']['id'];
+        $_SESSION['username'] = $result['user']['username'];
+        $_SESSION['role'] = $result['user']['role'];
 
-            // Arahkan ke dashboard sesuai peran
-            if ($user['role'] === 'operator') {
-                header("Location: dashboard_operator.php");
-            } else {
-                header("Location: Pengguna/dashboard.php");
-            }
-            exit();
+        if ($result['user']['role'] === 'operator') {
+            header("Location: dashboard_operator.php");
         } else {
-            $error = "Username atau password salah. Silakan coba lagi";
+            header("Location: pengguna/dashboard.php");
         }
+        exit;
     } else {
-        $error = "Username atau password salah. Silakan coba lagi";
+        $error = $result['message'] ?? "Login gagal";
     }
-
-    $stmt->close();
 }
 ?>
 
@@ -58,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
     <div class="form-container">
         <h2>Login</h2>
-        <form method="post">
+        <form method="post" action="login.php">
             <input type="text" name="username" placeholder="Username" required>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Login</button>
