@@ -143,4 +143,4 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'operator') {
     </div>
   </div>
 </body>
-</html>
+</html> 
